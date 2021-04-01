@@ -16,9 +16,7 @@ def get_all_champs():
     '''
         return a list containing all champions and their main lanes
     '''
-
     champions_list = []
-
     # request 
     req = requests.get(CHAMPS_URL)
     content = req.text
