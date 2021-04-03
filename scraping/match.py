@@ -5,7 +5,8 @@ import datetime
 # GET USER ID ! https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/oraxan{summonerName} | accountId
 # GET MATCH BY USER : GET /lol/match/v4/matchlists/by-account/{encryptedAccountId}
 # GET MATCH DETAILS : GET /lol/match/v4/matches/{matchId}
-# GET CHAMP DETAILS : http://ddragon.leagueoflegends.com/cdn/11.7.1/data/en_US/champion/{champion}.json
+# GET CHAMP DETAILS : http://ddragon.leagueoflegends.com/cdn/11.7.1/data/en_US/champion.json
+
 
 
 
@@ -20,7 +21,7 @@ API_KEY = os.environ.get("RIOT_KEY")
 USER_DETAIL_URL = "https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/"
 MATCH_BY_USER_URL = "https://euw1.api.riotgames.com/lol/match/v4/matchlists/by-account/"
 MATCH_DETAILS_URL = "https://euw1.api.riotgames.com/lol/match/v4/matches/"
-
+CHAMPIONS_URL = "http://ddragon.leagueoflegends.com/cdn/11.7.1/data/en_US/champion.json"
 
 headers = {
     "X-Riot-Token": API_KEY
@@ -72,13 +73,23 @@ def fetch_match_details(match_id):
     try: 
         r = requests.get(url, headers=headers)
         game_detail = r.json()
-        print(content)
 
     except Exception as e: 
         raise e    
     finally: 
         return game_detail
         
+
+def get_champion_name(champion_id): 
+    '''
+        return a champion's name 
+        Argument : champion id
+    '''
+
+    try: 
+        r = requests.get(CHAMPIONS_URL)
+        
+
 
 
 # DONE 
@@ -101,19 +112,26 @@ class PlayerSerializer:
 
     @classmethod 
     def from_ParticipantStatsDto(self, ParticipantStatsDto): 
+        print("Received player :")
+        print(ParticipantStatsDto)
         # print(ParticipantStatsDto)
         player_serializer = PlayerSerializer() 
         data = {}
-        for attr in player_serializer.__dict__.keys(): 
-            print(attr)
+        attributes = list(player_serializer.__dict__.keys())
+        # we will handle championName after everything
+        attributes.pop("championName")
+        for attr in attributes: 
             if attr in ParticipantStatsDto:
                 data[attr] = ParticipantStatsDto[attr]
-            elif attr in ParticipantStatsDto["status"]: 
+            elif attr in ParticipantStatsDto["stats"]: 
                 data[attr] = ParticipantStatsDto["status"][attr]
             else: 
-                raise Exception(f"Error : cannot retrieve attribute {attr} from the ParticipantStatsDto body.")
-        
-        return player_serializer(**data)
+                # handle errors
+                print(f"Error : cannot retrieve attribute {attr} from the ParticipantStatsDto body.")
+
+        # get champion's name
+        player_instance = player_serializer(**data)
+        player_instance.championName = get_champion_name()
 
     def to_dict(self): 
         return self.__dict__
@@ -146,7 +164,8 @@ class TeamSerializer:
                 TeamStateDto : A single TeamStatsDto object, 1 team only, 
                 participantList : A list of all players in a team
         '''
-        print(participantList)
+        print("Printin team's players ! ")
+        # print(participantList)
         data = {
             "teamId" : TeamStatsDto["teamId"],
             "status" : TeamStatsDto["win"], 
@@ -170,17 +189,17 @@ class TeamSerializer:
 
 class MatchSerializer: 
     
-    def __init__(self): 
-        self.gameId = None 
-        self.platformId = None 
-        self.gameDuration = None
-        self.seasonId = None
-        self.gameMode = None
+    def __init__(self, *args, **kwargs): 
+        self.gameId = kwargs.get("gameId", None) 
+        self.platformId = kwargs.get("platformId", None) 
+        self.gameDuration = kwargs.get("gameDuration", None)
+        self.seasonId = kwargs.get("seasonId", None)
+        self.gameMode = kwargs.get("gameMode", None)
         # list of players in team 1
-        self.teamOne = None 
+        self.teamOne = kwargs.get("teamOne", None) 
         # list of players in team 2 
-        self.teamTwo = None
-        self.winner = None
+        self.teamTwo = kwargs.get("teamTwo", None)
+        self.winner = kwargs.get("winner", None)
 
 
     @classmethod 
@@ -202,13 +221,13 @@ class MatchSerializer:
 
         for i in range(0, 2): 
             # get gen team data 
-            team_meta = match_body["team"]
+            team_meta = match_body["teams"][i]
             team_id = team_meta["teamId"]
             # get players from team 
             players_list = [player for player in match_body["participants"] if player["teamId"] == team_id]
             print(f"Player list size : {len(players_list)} \n")
             #serializing 
-            team_serializer = TeamSerializer.from_dict()     
+            team_serializer = TeamSerializer.from_dict(team_meta, players_list)     
             team_obj = team_serializer.to_dict()
             if i == 0: 
                 match_obj.teamOne = team_obj
@@ -221,6 +240,8 @@ class MatchSerializer:
         # todo : format the instance as a csv
         pass
 
+
+# test 
 
 user_id = fetch_user_account_id("oraxan")
 print(user_id)
