@@ -2,6 +2,7 @@ import requests
 import os
 import json
 import datetime
+import pickle
 # GET USER ID ! https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/oraxan{summonerName} | accountId
 # GET MATCH BY USER : GET /lol/match/v4/matchlists/by-account/{encryptedAccountId}
 # GET MATCH DETAILS : GET /lol/match/v4/matches/{matchId}
@@ -17,12 +18,13 @@ import datetime
     # GET DETAILS ( teams, items, champs_id, stats)
     # GET CHAMP (champ infos)
 # -----------------------------------------------------------------
+with open("champion_list", "rb") as f: 
+    CHAMPION_LIST = pickle.load(f)["champion_list"]
 API_KEY = os.environ.get("RIOT_KEY")
 USER_DETAIL_URL = "https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/"
 MATCH_BY_USER_URL = "https://euw1.api.riotgames.com/lol/match/v4/matchlists/by-account/"
 MATCH_DETAILS_URL = "https://euw1.api.riotgames.com/lol/match/v4/matches/"
 CHAMPIONS_URL = "http://ddragon.leagueoflegends.com/cdn/11.7.1/data/en_US/champion.json"
-
 headers = {
     "X-Riot-Token": API_KEY
 }
@@ -85,53 +87,51 @@ def get_champion_name(champion_id):
         return a champion's name 
         Argument : champion id
     '''
+    return CHAMPION_LIST[champion_id]
 
-    try: 
-        r = requests.get(CHAMPIONS_URL)
-        
+
 
 
 
 # DONE 
 class PlayerSerializer:
 
-    def __init__(self): 
-        self.championId = None
-        self.championName = None
-        self.kills = None 
-        self.deaths = None 
-        self.assists = None 
-        self.totalDamageDealt = None 
-        self.visionScore = None
-        self.totalDamageTaken = None
-        self.turretKills = None
-        self.totalMinionsKilled = None
-        self.champLevel = None
-        self.wardsKilled = None
-        
+    def __init__(self, *args, **kwargs): 
+        self.championId = str(kwargs.get("championId", None))
+        self.championName = kwargs.get("championName", None)
+        self.kills = kwargs.get("kills", None) 
+        self.deaths = kwargs.get("deaths", None) 
+        self.assists = kwargs.get("assists", None) 
+        self.totalDamageDealt = kwargs.get("totalDamageDealt", None) 
+        self.visionScore = kwargs.get("visionScore", None)
+        self.totalDamageTaken = kwargs.get("totalDamageTaken", None)
+        self.turretKills = kwargs.get("turretKills", None)
+        self.totalMinionsKilled = kwargs.get("totalMinionsKilled", None)
+        self.champLevel = kwargs.get("champLevel", None)
+        self.wardsKilled = kwargs.get("wardsKilled", None)
 
     @classmethod 
-    def from_ParticipantStatsDto(self, ParticipantStatsDto): 
-        print("Received player :")
-        print(ParticipantStatsDto)
-        # print(ParticipantStatsDto)
-        player_serializer = PlayerSerializer() 
+    def from_ParticipantStatsDto(cls, ParticipantStatsDto): 
         data = {}
-        attributes = list(player_serializer.__dict__.keys())
+        attributes = list(cls().__dict__.keys())
         # we will handle championName after everything
-        attributes.pop("championName")
+        attributes.remove("championName")
         for attr in attributes: 
             if attr in ParticipantStatsDto:
                 data[attr] = ParticipantStatsDto[attr]
             elif attr in ParticipantStatsDto["stats"]: 
-                data[attr] = ParticipantStatsDto["status"][attr]
+                data[attr] = ParticipantStatsDto["stats"][attr]
             else: 
                 # handle errors
                 print(f"Error : cannot retrieve attribute {attr} from the ParticipantStatsDto body.")
 
         # get champion's name
-        player_instance = player_serializer(**data)
-        player_instance.championName = get_champion_name()
+        print(data)
+        player_instance = cls(**data)
+        champ_id = player_instance.championId
+        player_instance.championName = get_champion_name(champ_id)
+
+        return player_instance
 
     def to_dict(self): 
         return self.__dict__
@@ -140,20 +140,20 @@ class PlayerSerializer:
 # DONE
 class TeamSerializer: 
 
-    def __init__(self): 
-        self.player1 = None # champ 
-        self.player2 = None 
-        self.player3 = None 
-        self.player4 = None 
-        self.player5 = None 
-        self.game_status = None # Win or Fail
-        self.team_id = None
-        self.firstBlood = None
-        self.firstBlood = None 
-        self.firstTower = None 
-        self.firstBaron = None 
-        self.firstDragon = None 
-        self.towerKills = None
+    def __init__(self, *args, **kwargs): 
+        self.player1 = kwargs.get("", None) # champ 
+        self.player2 = kwargs.get("", None) 
+        self.player3 = kwargs.get("", None) 
+        self.player4 = kwargs.get("", None) 
+        self.player5 = kwargs.get("", None) 
+        self.game_status = kwargs.get("", None) # Win or Fail
+        self.team_id = kwargs.get("", None)
+        self.firstBlood = kwargs.get("", None)
+        self.firstBlood = kwargs.get("", None) 
+        self.firstTower = kwargs.get("", None) 
+        self.firstBaron = kwargs.get("", None) 
+        self.firstDragon = kwargs.get("", None) 
+        self.towerKills = kwargs.get("", None)
     
         
     @classmethod
@@ -178,9 +178,9 @@ class TeamSerializer:
 
         for idx, player in enumerate(participantList): 
             player_obj = PlayerSerializer.from_ParticipantStatsDto(player)
-            data["player"+idx] = to_dict.to_dict()
+            data["player"+str(idx)] = player_obj.to_dict()
 
-        serialized_team = TeamSerializer(**team_data) 
+        serialized_team = TeamSerializer(**data) 
         return serialized_team
 
     def to_dict(self): 
@@ -251,3 +251,4 @@ match_resp = fetch_match_details(match_id)
 
 
 match_object = MatchSerializer.from_response_body(match_resp)
+print(match_object)
