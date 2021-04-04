@@ -1,5 +1,5 @@
-import requests
 import os
+import requests
 import json
 import datetime
 import pickle
@@ -91,8 +91,6 @@ def get_champion_name(champion_id):
 
 
 
-
-
 # DONE 
 class PlayerSerializer:
 
@@ -126,7 +124,6 @@ class PlayerSerializer:
                 print(f"Error : cannot retrieve attribute {attr} from the ParticipantStatsDto body.")
 
         # get champion's name
-        print(data)
         player_instance = cls(**data)
         champ_id = player_instance.championId
         player_instance.championName = get_champion_name(champ_id)
@@ -141,19 +138,19 @@ class PlayerSerializer:
 class TeamSerializer: 
 
     def __init__(self, *args, **kwargs): 
-        self.player1 = kwargs.get("", None) # champ 
-        self.player2 = kwargs.get("", None) 
-        self.player3 = kwargs.get("", None) 
-        self.player4 = kwargs.get("", None) 
-        self.player5 = kwargs.get("", None) 
-        self.game_status = kwargs.get("", None) # Win or Fail
-        self.team_id = kwargs.get("", None)
-        self.firstBlood = kwargs.get("", None)
-        self.firstBlood = kwargs.get("", None) 
-        self.firstTower = kwargs.get("", None) 
-        self.firstBaron = kwargs.get("", None) 
-        self.firstDragon = kwargs.get("", None) 
-        self.towerKills = kwargs.get("", None)
+        self.player1 = kwargs.get("player1", None) # champ 
+        self.player2 = kwargs.get("player2", None) 
+        self.player3 = kwargs.get("player3", None) 
+        self.player4 = kwargs.get("player4", None) 
+        self.player5 = kwargs.get("player5", None) 
+        self.status = kwargs.get("status", None) # Win or Fail
+        self.teamId = kwargs.get("teamId", None)
+        self.firstBlood = kwargs.get("firstBlood", None)
+        self.firstBlood = kwargs.get("firstBlood", None) 
+        self.firstTower = kwargs.get("firstTower", None) 
+        self.firstBaron = kwargs.get("firstBaron", None) 
+        self.firstDragon = kwargs.get("firstDragon", None) 
+        self.towerKills = kwargs.get("towerKills", None)
     
         
     @classmethod
@@ -175,10 +172,12 @@ class TeamSerializer:
             "firstDragon" : TeamStatsDto["firstDragon"], 
             "towerKills" : TeamStatsDto["towerKills"]
         }
+        print(data)
 
         for idx, player in enumerate(participantList): 
+            print(idx)
             player_obj = PlayerSerializer.from_ParticipantStatsDto(player)
-            data["player"+str(idx)] = player_obj.to_dict()
+            data["player"+str(idx + 1)] = player_obj.to_dict()
 
         serialized_team = TeamSerializer(**data) 
         return serialized_team
@@ -199,7 +198,6 @@ class MatchSerializer:
         self.teamOne = kwargs.get("teamOne", None) 
         # list of players in team 2 
         self.teamTwo = kwargs.get("teamTwo", None)
-        self.winner = kwargs.get("winner", None)
 
 
     @classmethod 
@@ -236,6 +234,12 @@ class MatchSerializer:
         
         return match_obj
 
+    def __repr__(self): 
+        return json.dumps(self.to_dict(), indent=4)
+
+    def to_dict(self): 
+        return self.__dict__
+
     def to_csv(self, file_path): 
         # todo : format the instance as a csv
         pass
@@ -244,9 +248,8 @@ class MatchSerializer:
 # test 
 
 user_id = fetch_user_account_id("oraxan")
-print(user_id)
 matches = fetch_user_matches(user_id)
-match_id = str(matches[0]["gameId"])
+match_id = str(matches[3]["gameId"])
 match_resp = fetch_match_details(match_id)
 
 
