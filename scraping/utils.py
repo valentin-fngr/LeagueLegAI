@@ -1,17 +1,15 @@
 import os
-import requests
 import pickle
-# GET USER ID ! https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/oraxan{summonerName} | accountId
-# GET MATCH BY USER : GET /lol/match/v4/matchlists/by-account/{encryptedAccountId}
-# GET MATCH DETAILS : GET /lol/match/v4/matches/{matchId}
-# GET CHAMP DETAILS : http://ddragon.leagueoflegends.com/cdn/11.7.1/data/en_US/champion.json
+import asyncio
+from aiohttp import ClientSession
 
-#  ------------------------ | STRATEGY | --------------------------
-    # GET USER ID (get suommer id )
-    # GET MATCH (get match list)
-    # GET DETAILS ( teams, items, champs_id, stats)
-    # GET CHAMP (champ infos)
-# -----------------------------------------------------------------
+
+
+"""
+    Utility functions to fetch informations from the riot API
+
+"""
+
 with open("champion_list", "rb") as f: 
     CHAMPION_LIST = pickle.load(f)["champion_list"]
 API_KEY = os.environ.get("RIOT_KEY")
@@ -19,39 +17,50 @@ USER_DETAIL_URL = "https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-n
 MATCH_BY_USER_URL = "https://euw1.api.riotgames.com/lol/match/v4/matchlists/by-account/"
 MATCH_DETAILS_URL = "https://euw1.api.riotgames.com/lol/match/v4/matches/"
 CHAMPIONS_URL = "http://ddragon.leagueoflegends.com/cdn/11.7.1/data/en_US/champion.json"
+
 headers = {
     "X-Riot-Token": API_KEY
 }
 
-def fetch_user_account_id(summoner_name): 
+async def fetch_user_account_id(summoner_name, session): 
     '''
         fetch a user account's details
+        Argument : 
+            summoner_name(str), 
+            session : aiohttp session
     '''
     url = USER_DETAIL_URL + summoner_name 
     accountId = None
     try: 
-        r = requests.get(url, headers=headers)
-        content = r.json()
+        r = await session.request(method="GET", url=url, headers=headers)
+        r.raise_for_status()
+        content = await r.json()
         # get account id
         accountId = content["accountId"] 
 
     except Exception as e: 
+        print(e)
         raise e
     finally: 
         return accountId        
 
 
-def fetch_user_matches(account_id, endIndex=30): 
+async def fetch_user_matches(account_id, session, endIndex=30): 
     '''
         fetch user's latest 30 matches
+        Argument: 
+            account_id : encrypted account_id
+            session : session, 
+            endIndex : maximum number of matches to fetch
     '''
     print(account_id)
     url = MATCH_BY_USER_URL + account_id
     matches = []
     params = {"endIndex" : endIndex}
     try: 
-        r = requests.get(url, headers=headers, params=params) 
-        content = r.json() 
+        r = await session.request(method="GET", url=url, headers=headers, params=params) 
+        r.raise_for_status()
+        content = await r.json()
         matches = content["matches"]
         print(f"Retrieved {len(matches)} matches for {account_id}")
     except Exception as e: 
@@ -60,15 +69,19 @@ def fetch_user_matches(account_id, endIndex=30):
         return matches
 
 
-def fetch_match_details(match_id): 
+async def fetch_match_details(match_id, session): 
     '''
         return a single match details response's body
+        Argument: 
+            match_id : a match's id
+            session : session
     '''
     url = MATCH_DETAILS_URL + match_id
     game_detail = {}
     try: 
-        r = requests.get(url, headers=headers)
-        game_detail = r.json()
+        r = await session.request(method="GET", url=url, headers=headers)
+        r.raise_for_status()
+        game_detail = await r.json()
 
     except Exception as e: 
         raise e    
@@ -76,7 +89,7 @@ def fetch_match_details(match_id):
         return game_detail
         
 
-def get_champion_name(champion_id): 
+async def get_champion_name(champion_id): 
     '''
         return a champion's name 
         Argument : champion id

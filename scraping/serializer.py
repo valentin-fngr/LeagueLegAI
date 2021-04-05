@@ -3,9 +3,6 @@ import requests
 import json
 import datetime
 import pickle
-from utils import (fetch_match_details, fetch_user_account_id, fetch_user_matches, get_champion_name)
-
-
 
 
 class PlayerSerializer:
