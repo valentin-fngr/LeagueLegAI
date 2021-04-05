@@ -2,7 +2,7 @@ import os
 import pickle
 import asyncio
 from aiohttp import ClientSession
-
+import requests
 
 
 """
@@ -21,6 +21,7 @@ CHAMPIONS_URL = "http://ddragon.leagueoflegends.com/cdn/11.7.1/data/en_US/champi
 headers = {
     "X-Riot-Token": API_KEY
 }
+
 
 async def fetch_user_account_id(summoner_name, session): 
     '''
@@ -45,7 +46,7 @@ async def fetch_user_account_id(summoner_name, session):
         return accountId        
 
 
-async def fetch_user_matches(account_id, session, endIndex=30): 
+async def fetch_user_matches(account_id, session, endIndex=10): 
     '''
         fetch user's latest 30 matches
         Argument: 
@@ -53,7 +54,6 @@ async def fetch_user_matches(account_id, session, endIndex=30):
             session : session, 
             endIndex : maximum number of matches to fetch
     '''
-    print(account_id)
     url = MATCH_BY_USER_URL + account_id
     matches = []
     params = {"endIndex" : endIndex}
@@ -61,7 +61,7 @@ async def fetch_user_matches(account_id, session, endIndex=30):
         r = await session.request(method="GET", url=url, headers=headers, params=params) 
         r.raise_for_status()
         content = await r.json()
-        matches = content["matches"]
+        matches = [match for match in content["matches"] if match is not None]
         print(f"Retrieved {len(matches)} matches for {account_id}")
     except Exception as e: 
         raise e
@@ -89,7 +89,7 @@ async def fetch_match_details(match_id, session):
         return game_detail
         
 
-async def get_champion_name(champion_id): 
+def get_champion_name(champion_id): 
     '''
         return a champion's name 
         Argument : champion id

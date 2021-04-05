@@ -3,6 +3,7 @@ import requests
 import json
 import datetime
 import pickle
+from utils import get_champion_name
 
 
 class PlayerSerializer:
@@ -74,7 +75,6 @@ class TeamSerializer:
                 TeamStateDto : A single TeamStatsDto object, 1 team only, 
                 participantList : A list of all players in a team
         '''
-        print("Printin team's players ! ")
         # print(participantList)
         data = {
             "teamId" : TeamStatsDto["teamId"],
@@ -85,10 +85,7 @@ class TeamSerializer:
             "firstDragon" : TeamStatsDto["firstDragon"], 
             "towerKills" : TeamStatsDto["towerKills"]
         }
-        print(data)
-
         for idx, player in enumerate(participantList): 
-            print(idx)
             player_obj = PlayerSerializer.from_ParticipantStatsDto(player)
             data["player"+str(idx + 1)] = player_obj.to_dict()
 
@@ -120,6 +117,7 @@ class MatchSerializer:
             Arguments : 
                 match_body : match_body from response
         '''
+        print(match_body)
         match_gen_details = {
             "gameId" : match_body["gameId"], 
             "platformId" : match_body["platformId"], 
@@ -136,7 +134,6 @@ class MatchSerializer:
             team_id = team_meta["teamId"]
             # get players from team 
             players_list = [player for player in match_body["participants"] if player["teamId"] == team_id]
-            print(f"Player list size : {len(players_list)} \n")
             #serializing 
             team_serializer = TeamSerializer.from_dict(team_meta, players_list)     
             team_obj = team_serializer.to_dict()

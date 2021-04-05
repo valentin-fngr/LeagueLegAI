@@ -10,18 +10,19 @@ from serializer import *
     # GET CHAMP (champ infos)
 # -----------------------------------------------------------------
 
-async def serialize_match(match_id, session): 
+async def serialize_match(game_id, session): 
     '''
         return a serialized match (json) from a summoner's name 
         Arguments: 
             match_detail : a match's id 
             sessiosn : aiothttp session
     '''
-    match_details = await fetch_match_details(game_id, session)  
-    serialized_match = MatchSerializer.from_response_body(match_details)
-    print("-"*50)
-    print(f"Received : \n {serialized_match}")
-    print("-"*50, "\n")
+    match_body = await fetch_match_details(game_id, session)  
+    print(match_body)
+    serialized_match = MatchSerializer.from_response_body(match_body)
+    # print("-"*50)
+    # print(f"Received : \n {serialized_match}")
+    # print("-"*50, "\n")
     return serialized_match
 
 
@@ -43,11 +44,11 @@ async def main(summoner_name):
 
         tasks = []
         
-        for match in matches: 
+        for idx, match in enumerate(matches): 
             game_id = str(match["gameId"])
-            tasks.append(serialized_match(game_id, sesion))
+            tasks.append(serialize_match(game_id, session))
+            print("done with " + str(idx+1))
         await asyncio.gather(*tasks)
-
 
         
 if __name__ == "__main__": 
