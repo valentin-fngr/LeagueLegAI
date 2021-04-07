@@ -46,7 +46,7 @@ async def fetch_user_account_id(summoner_name, session):
         return accountId        
 
 
-async def fetch_user_matches(account_id, session, endIndex=10): 
+async def fetch_user_matches(account_id, session, endIndex=2): 
     '''
         fetch user's latest 30 matches
         Argument: 

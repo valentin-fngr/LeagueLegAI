@@ -18,15 +18,12 @@ async def serialize_match(game_id, session):
             sessiosn : aiothttp session
     '''
     match_body = await fetch_match_details(game_id, session)  
-    print(match_body)
-    serialized_match = MatchSerializer.from_response_body(match_body)
-    # print("-"*50)
-    # print(f"Received : \n {serialized_match}")
-    # print("-"*50, "\n")
+    serialized_match = MatchSerializer.from_response_body(match_body).to_dict()
+    print(json.dumps(serialized_match, indent=4))
     return serialized_match
 
 
-async def main(summoner_name):
+async def get_matches(summoner_name):
     '''
         return a serialized match (json) from a summoner's name 
         Arguments: 
@@ -35,6 +32,7 @@ async def main(summoner_name):
     async with ClientSession() as session: 
         try: 
             account_id = await fetch_user_account_id(summoner_name, session)
+            print(account_id)
             matches = await fetch_user_matches(account_id, session)
         #TO DO  : REMOVE EXCEPTIONS FROM THE UTILITY FUNCTIONS ! 
         except Exception as e:
@@ -48,9 +46,10 @@ async def main(summoner_name):
             game_id = str(match["gameId"])
             tasks.append(serialize_match(game_id, session))
             print("done with " + str(idx+1))
+
         await asyncio.gather(*tasks)
 
         
 if __name__ == "__main__": 
     # TO DO : add a functin for it 
-    asyncio.run(main("oraxan"))
+    asyncio.run(get_matches("oraxan"))

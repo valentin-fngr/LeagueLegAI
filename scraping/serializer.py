@@ -9,6 +9,8 @@ from utils import get_champion_name
 class PlayerSerializer:
 
     def __init__(self, *args, **kwargs): 
+        self.participantId = str(kwargs.get("participantId", None))
+        self.matchHistoryUri = str(kwargs.get("matchHistoryUri", None))
         self.championId = str(kwargs.get("championId", None))
         self.championName = kwargs.get("championName", None)
         self.kills = kwargs.get("kills", None) 
@@ -23,11 +25,13 @@ class PlayerSerializer:
         self.wardsKilled = kwargs.get("wardsKilled", None)
 
     @classmethod 
-    def from_ParticipantStatsDto(cls, ParticipantStatsDto): 
+    def from_ParticipantStatsDto(cls, ParticipantStatsDto, matchUri): 
         data = {}
         attributes = list(cls().__dict__.keys())
         # we will handle championName after everything
-        attributes.remove("championName")
+        for attr in ["championName", "matchHistoryUri"]:
+            attributes.remove(attr)
+    
         for attr in attributes: 
             if attr in ParticipantStatsDto:
                 data[attr] = ParticipantStatsDto[attr]
@@ -36,7 +40,9 @@ class PlayerSerializer:
             else: 
                 # handle errors
                 print(f"Error : cannot retrieve attribute {attr} from the ParticipantStatsDto body.")
-
+        
+        # get match history : 
+        data["matchHistoryUri"] = matchUri
         # get champion's name
         player_instance = cls(**data)
         champ_id = player_instance.championId
@@ -68,7 +74,7 @@ class TeamSerializer:
     
         
     @classmethod
-    def from_dict(cls, TeamStatsDto, participantList):
+    def from_dict(cls, TeamStatsDto, participantList, matchHistoryUriList):
         '''
             return a TeamSerializer instance 
             Arguments : 
@@ -86,7 +92,9 @@ class TeamSerializer:
             "towerKills" : TeamStatsDto["towerKills"]
         }
         for idx, player in enumerate(participantList): 
-            player_obj = PlayerSerializer.from_ParticipantStatsDto(player)
+            # get match history uri by player 
+            matchUri = matchHistoryUriList[idx]
+            player_obj = PlayerSerializer.from_ParticipantStatsDto(player, matchUri)
             data["player"+str(idx + 1)] = player_obj.to_dict()
 
         serialized_team = TeamSerializer(**data) 
@@ -117,7 +125,6 @@ class MatchSerializer:
             Arguments : 
                 match_body : match_body from response
         '''
-        print(match_body)
         match_gen_details = {
             "gameId" : match_body["gameId"], 
             "platformId" : match_body["platformId"], 
@@ -125,6 +132,7 @@ class MatchSerializer:
             "seasonId" : match_body["seasonId"], 
             "gameMode" : match_body["gameMode"]
         }
+        participantIdentities = match_body["participantIdentities"]
 
         match_obj = cls(**match_gen_details)
 
@@ -132,10 +140,13 @@ class MatchSerializer:
             # get gen team data 
             team_meta = match_body["teams"][i]
             team_id = team_meta["teamId"]
+            
             # get players from team 
             players_list = [player for player in match_body["participants"] if player["teamId"] == team_id]
+            # match uri for each team's participant
+            matchHistoryUri = [participants["player"]["matchHistoryUri"] for participants in participantIdentities]
             #serializing 
-            team_serializer = TeamSerializer.from_dict(team_meta, players_list)     
+            team_serializer = TeamSerializer.from_dict(team_meta, players_list, matchHistoryUri)     
             team_obj = team_serializer.to_dict()
             if i == 0: 
                 match_obj.teamOne = team_obj
