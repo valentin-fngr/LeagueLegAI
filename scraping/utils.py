@@ -100,17 +100,18 @@ def fetch_summoner_name_by_division(division, tier, queue):
             
     '''
     players = set()
-    for i in range(3): 
+    for i in range(5): # fetching up to 5 pages 
         page = i+1 
         url = LEAGUE_URL + f"/{queue}/{tier}/{division}?{page}"
         try: 
             r = requests.get(url, headers=headers)
             body = r.json()
-            for player in body: 
+            print(body)
+            for player in body[:10]: # fetching first 10 players 
                 summonerName = player["summonerName"]
                 if summonerName not in players: 
                     players.add(summonerName)
-                    break
+                
             break
         except Exception as e: 
             print(e)

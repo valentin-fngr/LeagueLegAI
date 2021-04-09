@@ -21,18 +21,25 @@ async def get_first_ten_matches(account_id, session):
     '''
     serialized_matches = []
     try: 
+        print(f"Let's fetch matches for {account_id} ")
         match_history = await fetch_user_matches(account_id, session)  
+        print("Succesfully fetched 2 matches")
         # get 15 matches
-        for i in range(15): 
+        for i in range(len(match_history)): 
             game_id = str(match_history[i]["gameId"]) 
             # fetch game details 
+            print(f"Fetching match nb {i + 1} for account id : {account_id}")
             game_detail = await fetch_match_details(game_id, session) 
+            print(f"Got game details ! for {game_id}")
             serialized_match = MatchSerializer.from_response_body(game_detail)
             serialized_matches.append(serialized_match)
-            return serialized_matches
+
+        print(f"Returning {len(serialized_matches)} game for account id : {account_id}")
+        return serialized_matches
     except Exception as e: 
         print(f"Couldn't fetch matches for user ID : {account_id}")
-        print(e) 
+        print(f"Coudln't fetch for game id : {game_id}")
+        print(e)
 
 
 
@@ -41,22 +48,23 @@ async def main():
     for tier in TIER: 
         for division in DIVISION: 
             player_list = fetch_summoner_name_by_division(division, tier, queue=QUEUE) 
-            print(player_list)
+            
+            print(f"Printing player list : {player_list}  \n")
             print(f"Received {len(player_list)} players \n")
-            print(f"Fetching data for {len(player_list)} players")
+            print(f"Fetching data for {len(player_list)} players \n")
             time.sleep(2)
             async with ClientSession() as session:
                 tasks = []
                 for player in player_list: 
                     # fetch user id 
                     account_id = await fetch_user_account_id(player, session)
+                    print(account_id)
                     if account_id not in players_ids: 
                         players_ids.add(account_id) 
                         # fetch matches 
                         tasks.append(get_first_ten_matches(account_id, session))
-                        print("Added one game ")
                     else: 
-                        print(f"Already processed {account_id}") 
+                        print(f"Already porcessed {account_id}") 
                 await asyncio.gather(*tasks)
         break 
 

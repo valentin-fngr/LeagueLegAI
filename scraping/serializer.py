@@ -22,7 +22,6 @@ class PlayerSerializer:
         self.turretKills = kwargs.get("turretKills", None)
         self.totalMinionsKilled = kwargs.get("totalMinionsKilled", None)
         self.champLevel = kwargs.get("champLevel", None)
-        self.wardsKilled = kwargs.get("wardsKilled", None)
 
     @classmethod 
     def from_ParticipantStatsDto(cls, ParticipantStatsDto, matchUri): 
@@ -164,15 +163,3 @@ class MatchSerializer:
     def to_csv(self, file_path): 
         # todo : format the instance as a csv
         pass
-
-
-# test 
-
-# user_id = fetch_user_account_id("oraxan")
-# matches = fetch_user_matches(user_id)
-# match_id = str(matches[3]["gameId"])
-# match_resp = fetch_match_details(match_id)
-
-
-# match_object = MatchSerializer.from_response_body(match_resp)
-# print(match_object)
