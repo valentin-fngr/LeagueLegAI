@@ -15,6 +15,19 @@ TIER = ["IRON", "SILVER", "BRONZE", "GOLD", "PLATINIUM", "DIAMOND"]
 QUEUE = "RANKED_SOLO_5x5"
 
 
+async def write_in_csv(path,account_id, session):
+    '''
+        write matches inside the csv provided via path. 
+        Arguments: 
+            account_id : player account id
+            session : async io session
+    '''
+    matches = await get_first_ten_matches(account_id, session)
+    if not matches: 
+        return matches 
+
+
+
 async def get_first_ten_matches(account_id, session): 
     '''
         Return a list of 15 matches for a given user
@@ -23,6 +36,7 @@ async def get_first_ten_matches(account_id, session):
     try: 
         print(f"Let's fetch matches for {account_id} ")
         match_history = await fetch_user_matches(account_id, session)  
+        time.sleep(2.2)
         print("Succesfully fetched 2 matches")
         # get 15 matches
         for i in range(len(match_history)): 

@@ -107,7 +107,7 @@ def fetch_summoner_name_by_division(division, tier, queue):
             r = requests.get(url, headers=headers)
             body = r.json()
             print(body)
-            for player in body[:10]: # fetching first 10 players 
+            for player in body[:5]: # fetching first 5 players 
                 summonerName = player["summonerName"]
                 if summonerName not in players: 
                     players.add(summonerName)
