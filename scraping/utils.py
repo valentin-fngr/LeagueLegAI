@@ -47,7 +47,7 @@ async def fetch_user_account_id(summoner_name, session):
         return accountId        
 
 
-async def fetch_user_matches(account_id, session, endIndex=2): 
+async def fetch_user_matches(account_id, session, endIndex=4): 
     '''
         fetch user's latest 30 matches
         Argument: 
@@ -80,13 +80,17 @@ async def fetch_match_details(match_id, session):
     url = MATCH_DETAILS_URL + match_id
     game_detail = {}
     try: 
+        print("trying to request a single match ! ")
         r = await session.request(method="GET", url=url, headers=headers)
+        print(r.status)
         r.raise_for_status()
         game_detail = await r.json()
 
     except Exception as e: 
         raise e    
     finally: 
+        print(f"result for : {match_id}")
+        print(game_detail["gameId"])
         return game_detail
         
 
@@ -106,8 +110,7 @@ def fetch_summoner_name_by_division(division, tier, queue):
         try: 
             r = requests.get(url, headers=headers)
             body = r.json()
-            print(body)
-            for player in body[:5]: # fetching first 5 players 
+            for player in body[:2]: # fetching first 2 players 
                 summonerName = player["summonerName"]
                 if summonerName not in players: 
                     players.add(summonerName)

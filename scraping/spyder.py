@@ -1,8 +1,11 @@
+import os 
 import asyncio
 from aiohttp import ClientSession
+import time
+import aiofiles
 from utils import (fetch_match_details, fetch_user_account_id, fetch_user_matches, get_champion_name, fetch_summoner_name_by_division)
 from serializer import * 
-import time
+
 #  ------------------------ | STRATEGY | --------------------------
     # GET USER ID (get suommer id )
     # GET MATCH (get match list)
@@ -13,9 +16,10 @@ import time
 DIVISION = ["I", "II", "III", "IV"]
 TIER = ["IRON", "SILVER", "BRONZE", "GOLD", "PLATINIUM", "DIAMOND"]
 QUEUE = "RANKED_SOLO_5x5"
+CSV_PATH = os.path.join(os.getcwd(), "my_file.txt")
 
 
-async def write_in_csv(path,account_id, session):
+async def write_in_csv(account_id, session, path=CSV_PATH):
     '''
         write matches inside the csv provided via path. 
         Arguments: 
@@ -25,6 +29,16 @@ async def write_in_csv(path,account_id, session):
     matches = await get_first_ten_matches(account_id, session)
     if not matches: 
         return matches 
+    if not os.path.exists(path): 
+        raise ValueError(f"Provided path : {path} doesn't exist")
+    else: 
+        async with aiofiles.open(path, "w") as f: 
+            print(f"writing for {len(matches)} matches !")
+            for match in matches: 
+                match_id = str(match.to_dict()["gameId"]) 
+                await f.write(match_id)
+        
+
 
 
 
@@ -37,14 +51,18 @@ async def get_first_ten_matches(account_id, session):
         print(f"Let's fetch matches for {account_id} ")
         match_history = await fetch_user_matches(account_id, session)  
         time.sleep(2.2)
-        print("Succesfully fetched 2 matches")
+        print(f"Succesfully fetched {len(match_history)} matches")
         # get 15 matches
         for i in range(len(match_history)): 
             game_id = str(match_history[i]["gameId"]) 
             # fetch game details 
             print(f"Fetching match nb {i + 1} for account id : {account_id}")
             game_detail = await fetch_match_details(game_id, session) 
-            print(f"Got game details ! for {game_id}")
+            time.sleep(2)
+            if game_detail: 
+                print(f"{game_id} is not NONE !!! ")
+            else: 
+                print(f"{game_id} is NONE !: -(((((((")
             serialized_match = MatchSerializer.from_response_body(game_detail)
             serialized_matches.append(serialized_match)
 
@@ -72,14 +90,14 @@ async def main():
                 for player in player_list: 
                     # fetch user id 
                     account_id = await fetch_user_account_id(player, session)
-                    print(account_id)
                     if account_id not in players_ids: 
                         players_ids.add(account_id) 
                         # fetch matches 
-                        tasks.append(get_first_ten_matches(account_id, session))
+                        tasks.append(write_in_csv(account_id, session))
                     else: 
                         print(f"Already porcessed {account_id}") 
                 await asyncio.gather(*tasks)
+                break
         break 
 
 
