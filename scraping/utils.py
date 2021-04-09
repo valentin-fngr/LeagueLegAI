@@ -3,6 +3,7 @@ import pickle
 import asyncio
 from aiohttp import ClientSession
 import requests
+import time
 
 
 """
@@ -18,6 +19,7 @@ MATCH_BY_USER_URL = "https://euw1.api.riotgames.com/lol/match/v4/matchlists/by-a
 MATCH_DETAILS_URL = "https://euw1.api.riotgames.com/lol/match/v4/matches/"
 CHAMPIONS_URL = "http://ddragon.leagueoflegends.com/cdn/11.7.1/data/en_US/champion.json"
 
+LEAGUE_URL = "https://euw1.api.riotgames.com/lol/league/v4/entries"
 headers = {
     "X-Riot-Token": API_KEY
 }
@@ -88,6 +90,38 @@ async def fetch_match_details(match_id, session):
     finally: 
         return game_detail
         
+
+def fetch_summoner_name_by_division(division, tier, queue): 
+    '''
+        return a list of summoner name of the first 10 pages by division
+        Arguments: 
+            divison : the division  1, 2, ...
+            tier : The league name : Bronze, ... 
+            queue : ranked solo or ranked 5v5
+            
+    '''
+    players = []
+    for i in range(10): 
+        time.sleep(2)
+        page = i+1 
+        url = LEAGUE_URL + f"/{queue}/{tier}/{division}/{page}?"
+        try: 
+            r = requests.get(url, headers=headers)
+            body = r.json()
+            print(body)
+            # read json  
+            for player in body: 
+                print(player)
+                summonerName = player["summonerName"]
+                players.append(summonerName)
+
+
+        except Exception as e: 
+            print(e)
+            raise e
+        finally:
+            return players
+
 
 def get_champion_name(champion_id): 
     '''
