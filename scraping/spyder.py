@@ -36,7 +36,7 @@ async def write_in_csv(account_id, session, path=CSV_PATH):
             print(f"writing for {len(matches)} matches !")
             for match in matches: 
                 match_id = str(match.to_dict()["gameId"]) 
-                await f.write(match_id)
+                await f.write(match_id +",")
         
 
 
@@ -48,30 +48,37 @@ async def get_first_ten_matches(account_id, session):
     '''
     serialized_matches = []
     try: 
-        print(f"Let's fetch matches for {account_id} ")
+        print(f"Let's fetch matches for {account_id} \n")
         match_history = await fetch_user_matches(account_id, session)  
         time.sleep(2.2)
-        print(f"Succesfully fetched {len(match_history)} matches")
-        # get 15 matches
+        print(f"Succesfully fetched {len(match_history)} matches for account id : {account_id}\n")
+
+    except (aiohttp.ClientError, aiohttp.http_exceptions.HttpProcessingError) as e:
+        print("IO Exception -----------") 
+        print(e, "\n")
+    except Exception as e: 
+        print("Non io Exception occured ---------")
+        print(f"Coudln't fetch matches for account_id  : {account_id}")
+    else: 
         for i in range(len(match_history)): 
             game_id = str(match_history[i]["gameId"]) 
             # fetch game details 
             print(f"Fetching match nb {i + 1} for account id : {account_id}")
-            game_detail = await fetch_match_details(game_id, session) 
-            time.sleep(2)
-            if game_detail: 
-                print(f"{game_id} is not NONE !!! ")
+            try: 
+                 game_detail = await fetch_match_details(game_id, session) 
+            except Exception as e: 
+                print("Non io Exception occured ---------")
+                print(f"Coudln't fetch for game id : {game_id}")
+                print(f"Following Exception occured {e} \n")
             else: 
-                print(f"{game_id} is NONE !: -(((((((")
-            serialized_match = MatchSerializer.from_response_body(game_detail)
-            serialized_matches.append(serialized_match)
-
-        print(f"Returning {len(serialized_matches)} game for account id : {account_id}")
-        return serialized_matches
-    except Exception as e: 
-        print(f"Couldn't fetch matches for user ID : {account_id}")
-        print(f"Coudln't fetch for game id : {game_id}")
-        print(e)
+                print(f"Successfully fetched : {game_detail['gameId']} plateformId : {game_detail['plateformId']} \n")
+                serialized_match = MatchSerializer.from_response_body(game_detail)
+                # adding the MatchSerializer instance here, not a dict ! 
+                serialized_matches.append(serialized_match)
+                time.sleep(2)   
+        
+    #returning matches
+    return serialized_matches
 
 
 
@@ -79,6 +86,7 @@ async def main():
     players_ids = set()
     for tier in TIER: 
         for division in DIVISION: 
+            print(f"Fetching players from : {tier}-{division}\n")
             player_list = fetch_summoner_name_by_division(division, tier, queue=QUEUE) 
             
             print(f"Printing player list : {player_list}  \n")

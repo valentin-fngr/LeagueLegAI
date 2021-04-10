@@ -33,19 +33,12 @@ async def fetch_user_account_id(summoner_name, session):
     '''
     url = USER_DETAIL_URL + summoner_name 
     accountId = None
-    try: 
-        r = await session.request(method="GET", url=url, headers=headers)
-        r.raise_for_status()
-        content = await r.json()
-        # get account id
-        accountId = content["accountId"] 
-
-    except Exception as e: 
-        print(e)
-        raise e
-    finally: 
-        return accountId        
-
+    r = await session.request(method="GET", url=url, headers=headers)
+    r.raise_for_status()
+    content = await r.json()
+    # get account id
+    accountId = content["accountId"] 
+    return accountId
 
 async def fetch_user_matches(account_id, session, endIndex=4): 
     '''
@@ -58,17 +51,11 @@ async def fetch_user_matches(account_id, session, endIndex=4):
     url = MATCH_BY_USER_URL + account_id
     matches = []
     params = {"endIndex" : endIndex}
-    try: 
-        r = await session.request(method="GET", url=url, headers=headers, params=params) 
-        r.raise_for_status()
-        content = await r.json()
-        matches = [match for match in content["matches"] if match is not None]
-        print(f"Retrieved {len(matches)} matches for {account_id}")
-    except Exception as e: 
-        raise e
-    finally: 
-        return matches
-
+    r = await session.request(method="GET", url=url, headers=headers, params=params) 
+    r.raise_for_status() # raise exception if status >= 400
+    content = await r.json()
+    matches = [match for match in content["matches"] if match is not None]
+    return matches
 
 async def fetch_match_details(match_id, session): 
     '''
@@ -78,21 +65,12 @@ async def fetch_match_details(match_id, session):
             session : session
     '''
     url = MATCH_DETAILS_URL + match_id
-    game_detail = {}
-    try: 
-        print("trying to request a single match ! ")
-        r = await session.request(method="GET", url=url, headers=headers)
-        print(r.status)
-        r.raise_for_status()
-        game_detail = await r.json()
+    print(f"Requesting match with id : {match_id} ")
+    r = await session.request(method="GET", url=url, headers=headers)
+    r.raise_for_status() # raise exception if status >= 400
+    game_detail = await r.json()
+    return game_detail
 
-    except Exception as e: 
-        raise e    
-    finally: 
-        print(f"result for : {match_id}")
-        print(game_detail["gameId"])
-        return game_detail
-        
 
 def fetch_summoner_name_by_division(division, tier, queue): 
     '''
@@ -107,20 +85,15 @@ def fetch_summoner_name_by_division(division, tier, queue):
     for i in range(5): # fetching up to 5 pages 
         page = i+1 
         url = LEAGUE_URL + f"/{queue}/{tier}/{division}?{page}"
-        try: 
-            r = requests.get(url, headers=headers)
-            body = r.json()
-            for player in body[:2]: # fetching first 2 players 
-                summonerName = player["summonerName"]
-                if summonerName not in players: 
-                    players.add(summonerName)
-                
-            break
-        except Exception as e: 
-            print(e)
-            raise e
-        time.sleep(3)
-
+        r = requests.get(url, headers=headers)
+        r.raise_for_status()
+        body = r.json()
+        for player in body[:2]: # fetching first 2 players 
+            summonerName = player["summonerName"]
+            if summonerName not in players:  # avoiding potential duplciates
+                players.add(summonerName)
+        break # break for fetching only one page
+        time.sleep(3) # request time sleep
     return players
 
 
