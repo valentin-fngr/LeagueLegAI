@@ -33,6 +33,7 @@ async def fetch_user_account_id(summoner_name, session):
     '''
     url = USER_DETAIL_URL + summoner_name 
     accountId = None
+    time.sleep(2)
     r = await session.request(method="GET", url=url, headers=headers)
     r.raise_for_status()
     content = await r.json()
@@ -40,7 +41,7 @@ async def fetch_user_account_id(summoner_name, session):
     accountId = content["accountId"] 
     return accountId
 
-async def fetch_user_matches(account_id, session, endIndex=3): 
+async def fetch_user_matches(account_id, session, endIndex=20): 
     '''
         fetch user's latest 30 matches
         Argument: 
@@ -88,7 +89,7 @@ def fetch_summoner_name_by_division(division, tier, queue):
         r = requests.get(url, headers=headers)
         r.raise_for_status()
         body = r.json()
-        for player in body[:1]: # fetching first 2 players 
+        for player in body: # fetching first 2 players 
             summonerName = player["summonerName"]
             if summonerName not in players:  # avoiding potential duplciates
                 players.add(summonerName)

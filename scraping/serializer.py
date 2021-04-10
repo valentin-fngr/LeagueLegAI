@@ -170,11 +170,13 @@ class MatchSerializer:
         for team in [match_dict["teamOne"], match_dict["teamTwo"]]: 
             team_data = [] 
             # iterating over players
-            for player in team: 
-                if "player" in player:
+            for stat_attr in team: 
+                if "player" in stat_attr:
                 # print(team[player])
-                    team_data.extend(list(team[player].values()))
+                    team_data.extend(list(team[stat_attr].values()))
+                else: 
+                    team_data.append(team[stat_attr])
+                    # we are dealing with a team state, not a player specific stat 
             data_array.extend(team_data)
         print(f"Final data size : {len(data_array)} \n")
         return data_array
-        # print(data_array)
