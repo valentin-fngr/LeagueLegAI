@@ -1,4 +1,5 @@
 import os 
+import csv 
 import asyncio
 from aiohttp import ClientSession
 import time
@@ -16,7 +17,7 @@ from serializer import *
 DIVISION = ["I", "II", "III", "IV"]
 TIER = ["IRON", "SILVER", "BRONZE", "GOLD", "PLATINIUM", "DIAMOND"]
 QUEUE = "RANKED_SOLO_5x5"
-CSV_PATH = os.path.join(os.getcwd(), "my_file.txt")
+CSV_PATH = os.path.join(os.getcwd(), "dataset.csv")
 
 
 async def write_in_csv(account_id, session, path=CSV_PATH):
@@ -29,18 +30,18 @@ async def write_in_csv(account_id, session, path=CSV_PATH):
     matches = await get_first_ten_matches(account_id, session)
     if not matches: 
         return matches 
-    if not os.path.exists(path): 
-        raise ValueError(f"Provided path : {path} doesn't exist")
+    # if not os.path.exists(path): 
+    #     raise ValueError(f"Provided path : {path} doesn't exist")
     else: 
-        async with aiofiles.open(path, "w") as f: 
+        async with aiofiles.open(path, "w", newline='') as csvfile: # create the file if doesn't exist
+            writer = csv.writer(csvfile) # csv writer
+
             print(f"writing for {len(matches)} matches !")
             for match in matches: 
                 match_id = str(match.to_dict()["gameId"]) 
-                await f.write(match_id +",")
+                # fill csv's rows
+                await writer.writerow(match.as_row())
         
-
-
-
 
 async def get_first_ten_matches(account_id, session): 
     '''
@@ -66,12 +67,13 @@ async def get_first_ten_matches(account_id, session):
             print(f"Fetching match nb {i + 1} for account id : {account_id}")
             try: 
                  game_detail = await fetch_match_details(game_id, session) 
+                #  break # ------------ REMOVE --------------------- #
             except Exception as e: 
                 print("Non io Exception occured ---------")
                 print(f"Coudln't fetch for game id : {game_id}")
                 print(f"Following Exception occured {e} \n")
             else: 
-                print(f"Successfully fetched : {game_detail['gameId']} plateformId : {game_detail['plateformId']} \n")
+                print(f"Successfully fetched : {game_detail['gameId']} plateformId : {game_detail['platformId']} \n")
                 serialized_match = MatchSerializer.from_response_body(game_detail)
                 # adding the MatchSerializer instance here, not a dict ! 
                 serialized_matches.append(serialized_match)
@@ -79,7 +81,6 @@ async def get_first_ten_matches(account_id, session):
         
     #returning matches
     return serialized_matches
-
 
 
 async def main(): 

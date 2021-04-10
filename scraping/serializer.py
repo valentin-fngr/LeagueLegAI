@@ -5,7 +5,6 @@ import datetime
 import pickle
 from utils import get_champion_name
 
-
 class PlayerSerializer:
 
     def __init__(self, *args, **kwargs): 
@@ -151,15 +150,31 @@ class MatchSerializer:
                 match_obj.teamOne = team_obj
             else: 
                 match_obj.teamTwo = team_obj
-        
         return match_obj
 
     def __repr__(self): 
-        return json.dumps(self.to_dict(), indent=4)
+        return f"[<MatchSerializer obj : {json.dumps(self.to_dict(), indent=4)}>]"
 
     def to_dict(self): 
         return self.__dict__
 
-    def to_csv(self, file_path): 
-        # todo : format the instance as a csv
-        pass
+    def as_row(self): 
+        '''
+            return a list of all instance's attributes in the following fashion : [gameId, ..., player1kills, player1champion, ....playerNkills, playerNchampion, ...]
+        '''
+        # BLOCKING IO
+        # TO DO : format a MatchSerializer as an array 
+        match_dict = self.to_dict()
+        data_array = [v for k,v in match_dict.items() if k not in ["teamOne", "teamTwo"]]
+        # unpack team's players 
+        for team in [match_dict["teamOne"], match_dict["teamTwo"]]: 
+            team_data = [] 
+            # iterating over players
+            for player in team: 
+                if "player" in player:
+                # print(team[player])
+                    team_data.extend(list(team[player].values()))
+            data_array.extend(team_data)
+        print(f"Final data size : {len(data_array)} \n")
+        return data_array
+        # print(data_array)

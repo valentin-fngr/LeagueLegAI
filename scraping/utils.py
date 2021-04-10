@@ -40,7 +40,7 @@ async def fetch_user_account_id(summoner_name, session):
     accountId = content["accountId"] 
     return accountId
 
-async def fetch_user_matches(account_id, session, endIndex=4): 
+async def fetch_user_matches(account_id, session, endIndex=3): 
     '''
         fetch user's latest 30 matches
         Argument: 
@@ -82,13 +82,13 @@ def fetch_summoner_name_by_division(division, tier, queue):
             
     '''
     players = set()
-    for i in range(5): # fetching up to 5 pages 
+    for i in range(10): # fetching up to 5 pages 
         page = i+1 
         url = LEAGUE_URL + f"/{queue}/{tier}/{division}?{page}"
         r = requests.get(url, headers=headers)
         r.raise_for_status()
         body = r.json()
-        for player in body[:2]: # fetching first 2 players 
+        for player in body[:1]: # fetching first 2 players 
             summonerName = player["summonerName"]
             if summonerName not in players:  # avoiding potential duplciates
                 players.add(summonerName)
