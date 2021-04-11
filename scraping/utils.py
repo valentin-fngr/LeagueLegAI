@@ -5,6 +5,7 @@ from aiohttp import ClientSession
 import requests
 import time
 import json
+import random
 
 """
     Utility functions to fetch informations from the riot API
@@ -33,12 +34,15 @@ async def fetch_user_account_id(summoner_name, session):
     '''
     url = USER_DETAIL_URL + summoner_name 
     accountId = None
-    time.sleep(2)
     r = await session.request(method="GET", url=url, headers=headers)
+    print("-"*20)
+    print(r.headers.get("X-Method-Rate-Limit-Count"))
+    print("-"*20)
     r.raise_for_status()
     content = await r.json()
     # get account id
     accountId = content["accountId"] 
+    print(f"Successfully retrieved account id : {accountId}")
     return accountId
 
 async def fetch_user_matches(account_id, session, endIndex=20): 
@@ -53,6 +57,9 @@ async def fetch_user_matches(account_id, session, endIndex=20):
     matches = []
     params = {"endIndex" : endIndex}
     r = await session.request(method="GET", url=url, headers=headers, params=params) 
+    print("-"*50)
+    print(r.headers.get("X-Method-Rate-Limit-Count"))
+    print("-"*50)
     r.raise_for_status() # raise exception if status >= 400
     content = await r.json()
     matches = [match for match in content["matches"] if match is not None]
@@ -68,6 +75,9 @@ async def fetch_match_details(match_id, session):
     url = MATCH_DETAILS_URL + match_id
     print(f"Requesting match with id : {match_id} ")
     r = await session.request(method="GET", url=url, headers=headers)
+    print("-"*50)
+    print(r.headers.get("X-Method-Rate-Limit-Count"))
+    print("-"*50)
     r.raise_for_status() # raise exception if status >= 400
     game_detail = await r.json()
     return game_detail
@@ -85,7 +95,8 @@ def fetch_summoner_name_by_division(division, tier, queue):
     players = set()
     for i in range(10): # fetching up to 5 pages 
         page = i+1 
-        url = LEAGUE_URL + f"/{queue}/{tier}/{division}?{page}"
+        url = LEAGUE_URL + f"/{queue}/{tier}/{division}?page={page}"
+        
         r = requests.get(url, headers=headers)
         r.raise_for_status()
         body = r.json()
@@ -93,8 +104,8 @@ def fetch_summoner_name_by_division(division, tier, queue):
             summonerName = player["summonerName"]
             if summonerName not in players:  # avoiding potential duplciates
                 players.add(summonerName)
+                
         break # break for fetching only one page
-        time.sleep(3) # request time sleep
     return players
 
 

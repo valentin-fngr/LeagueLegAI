@@ -35,15 +35,17 @@ INITIAL_ROW = [
     "is_winner_y", "teamId_y", "firstBlood_y", "firstTower_y", "firstBaron_y", "firstDragon_y"
 ]
 
-async def write_in_csv(account_id, session, path=CSV_PATH):
+async def write_in_csv(summonerName, session, limit, path=CSV_PATH):
+    
     '''
         write matches inside the csv provided via path. 
         Arguments: 
             account_id : player account id
             session : async io session
     '''
-    matches = await get_first_ten_matches(account_id, session)
-    time.sleep(2)
+    async with limit:
+        matches = await get_first_ten_matches(summonerName, session)
+        await asyncio.sleep(1/20)
     if not matches: 
         return matches 
     else: 
@@ -55,25 +57,28 @@ async def write_in_csv(account_id, session, path=CSV_PATH):
                 match_id = str(match.to_dict()["gameId"]) 
                 # fill csv's rows
                 await writer.writerow(match.as_row())
-        
+    
 
-async def get_first_ten_matches(account_id, session): 
+async def get_first_ten_matches(summonerName, session): 
     '''
         Return a list of 15 matches for a given user
     '''
     serialized_matches = []
     try: 
-        print(f"Let's fetch matches for {account_id} \n")
-        match_history = await fetch_user_matches(account_id, session)  
+        account_id = await fetch_user_account_id(summonerName, session)
+        print(f"Trying to fetch match_history")
+        match_history = await fetch_user_matches(account_id, session)
         print(f"Succesfully fetched {len(match_history)} matches for account id : {account_id}\n")
 
     except (aiohttp.ClientError, aiohttp.http_exceptions.HttpProcessingError) as e:
         print("IO Exception -----------") 
+        print("Failed fetching match history")
         print(e, "\n")
     except Exception as e: 
         print("Non io Exception occured ---------")
-        print(f"Coudln't fetch matches for account_id  : {account_id}")
+        print(f"Coudln't fetch matches for account_id  : {summonerName}")
     else: 
+        # iterating over matches
         for i in range(len(match_history)): 
             game_id = str(match_history[i]["gameId"]) 
             # fetch game details 
@@ -89,7 +94,6 @@ async def get_first_ten_matches(account_id, session):
                 serialized_match = MatchSerializer.from_response_body(game_detail)
                 # adding the MatchSerializer instance here, not a dict ! 
                 serialized_matches.append(serialized_match)
-                time.sleep(2)   
         
     #returning matches
     return serialized_matches
@@ -101,38 +105,17 @@ async def main():
         writer = csv.writer(csvfile)
         writer.writerow(INITIAL_ROW)
 
-    players_ids = set()
     for tier in TIER: 
         for division in DIVISION: 
-            print(f"Fetching players from : {tier}-{division}\n")
             player_list = fetch_summoner_name_by_division(division, tier, queue=QUEUE) 
             
-            print(f"Printing player list : {player_list}  \n")
             print(f"Received {len(player_list)} players \n")
-            print(f"Fetching data for {len(player_list)} players \n")
+            limit = asyncio.Semaphore(2)
             async with ClientSession() as session:
                 tasks = []
-                for player in player_list: 
-                    # fetch user id 
-                    try: 
-                        account_id = await fetch_user_account_id(player, session)
-                    except Exception as e: 
-                        print("Non io Exception occured ---------")
-                        print(f"Coudln't fetch account_id for player :  {player}")
-                        print(f"Following Exception occured {e} \n")
-                    except (aiohttp.ClientError, aiohttp.http_exceptions.HttpProcessingError) as e:
-                        print("IO Exception -----------") 
-                        print(e, "\n")
-                        # fetch matches 
-                        tasks.append(write_in_csv(account_id, session))
-                    else: 
-                        if account_id not in players_ids: 
-                            players_ids.add(account_id) 
-                            tasks.append(write_in_csv(account_id, session))
-                        else: 
-                            print(f"Already processed {account_id}") 
+                for summonerName in player_list: 
+                    tasks.append(write_in_csv(summonerName, session, limit))
                 await asyncio.gather(*tasks)
-                print(f"Done with division : {division}")
         print(f"Done with {tier} | {division}")
 
 if __name__ == "__main__": 
