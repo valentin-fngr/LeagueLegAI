@@ -69,10 +69,10 @@ async def fetch_user_matches(account_id, session, endIndex=50):
 
 async def fetch_match_details(match_id, session): 
     '''
-        return a single match details response's body
+        return a single match details response's body 
         Argument: 
-            match_id : a match's id
-            session : session
+            match_id : a match's id 
+            session : session 
     '''
     url = MATCH_DETAILS_URL + match_id
     print(f"Requesting match with id : {match_id} ")
