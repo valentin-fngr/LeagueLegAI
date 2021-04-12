@@ -38,6 +38,7 @@ async def fetch_user_account_id(summoner_name, session):
     print("-"*20)
     print(r.headers.get("X-Method-Rate-Limit-Count"))
     print("-"*20)
+    await asyncio.sleep(1.4 + random.random())
     r.raise_for_status()
     content = await r.json()
     # get account id
@@ -45,7 +46,7 @@ async def fetch_user_account_id(summoner_name, session):
     print(f"Successfully retrieved account id : {accountId}")
     return accountId
 
-async def fetch_user_matches(account_id, session, endIndex=20): 
+async def fetch_user_matches(account_id, session, endIndex=50): 
     '''
         fetch user's latest 30 matches
         Argument: 
@@ -60,6 +61,7 @@ async def fetch_user_matches(account_id, session, endIndex=20):
     print("-"*50)
     print(r.headers.get("X-Method-Rate-Limit-Count"))
     print("-"*50)
+    await asyncio.sleep(1 + random.random())
     r.raise_for_status() # raise exception if status >= 400
     content = await r.json()
     matches = [match for match in content["matches"] if match is not None]
@@ -78,6 +80,7 @@ async def fetch_match_details(match_id, session):
     print("-"*50)
     print(r.headers.get("X-Method-Rate-Limit-Count"))
     print("-"*50)
+    await asyncio.sleep(1 + random.random())
     r.raise_for_status() # raise exception if status >= 400
     game_detail = await r.json()
     return game_detail

@@ -43,9 +43,7 @@ async def write_in_csv(summonerName, session, limit, path=CSV_PATH):
             account_id : player account id
             session : async io session
     '''
-    async with limit:
-        matches = await get_first_ten_matches(summonerName, session)
-        await asyncio.sleep(1/20)
+    matches = await get_first_ten_matches(summonerName, session, limit)
     if not matches: 
         return matches 
     else: 
@@ -59,44 +57,48 @@ async def write_in_csv(summonerName, session, limit, path=CSV_PATH):
                 await writer.writerow(match.as_row())
     
 
-async def get_first_ten_matches(summonerName, session): 
+async def get_first_ten_matches(summonerName, session,limit): 
     '''
         Return a list of 15 matches for a given user
     '''
-    serialized_matches = []
-    try: 
-        account_id = await fetch_user_account_id(summonerName, session)
-        print(f"Trying to fetch match_history")
-        match_history = await fetch_user_matches(account_id, session)
-        print(f"Succesfully fetched {len(match_history)} matches for account id : {account_id}\n")
+    async with limit: 
+        serialized_matches = []
+        try: 
+            account_id = await fetch_user_account_id(summonerName, session)
+            await asyncio.sleep(1)
+            print(f"Trying to fetch match_history")
+            match_history = await fetch_user_matches(account_id, session)
+            await asyncio.sleep(1)
+            print(f"Succesfully fetched {len(match_history)} matches for account id : {account_id}\n")
 
-    except (aiohttp.ClientError, aiohttp.http_exceptions.HttpProcessingError) as e:
-        print("IO Exception -----------") 
-        print("Failed fetching match history")
-        print(e, "\n")
-    except Exception as e: 
-        print("Non io Exception occured ---------")
-        print(f"Coudln't fetch matches for account_id  : {summonerName}")
-    else: 
-        # iterating over matches
-        for i in range(len(match_history)): 
-            game_id = str(match_history[i]["gameId"]) 
-            # fetch game details 
-            print(f"Fetching match nb {i + 1} for account id : {account_id}")
-            try: 
-                 game_detail = await fetch_match_details(game_id, session) 
-            except Exception as e: 
-                print("Non io Exception occured ---------")
-                print(f"Coudln't fetch for game id : {game_id}")
-                print(f"Following Exception occured {e} \n")
-            else: 
-                print(f"Successfully fetched : {game_detail['gameId']} plateformId : {game_detail['platformId']} \n")
-                serialized_match = MatchSerializer.from_response_body(game_detail)
-                # adding the MatchSerializer instance here, not a dict ! 
-                serialized_matches.append(serialized_match)
-        
-    #returning matches
-    return serialized_matches
+        except (aiohttp.ClientError, aiohttp.http_exceptions.HttpProcessingError) as e:
+            print("IO Exception -----------") 
+            print("Failed fetching match history")
+            print(e, "\n")
+        except Exception as e: 
+            print("Non io Exception occured ---------")
+            print(f"Coudln't fetch matches for account_id  : {summonerName}")
+        else: 
+            # iterating over matches
+            for i in range(len(match_history)): 
+                game_id = str(match_history[i]["gameId"]) 
+                # fetch game details 
+                print(f"Fetching match nb {i + 1} for account id : {account_id}")
+                try: 
+                    game_detail = await fetch_match_details(game_id, session) 
+                    await asyncio.sleep(1)
+                except Exception as e: 
+                    print("Non io Exception occured ---------")
+                    print(f"Coudln't fetch for game id : {game_id}")
+                    print(f"Following Exception occured {e} \n")
+                else: 
+                    print(f"Successfully fetched : {game_detail['gameId']} plateformId : {game_detail['platformId']} \n")
+                    serialized_match = MatchSerializer.from_response_body(game_detail)
+                    # adding the MatchSerializer instance here, not a dict ! 
+                    serialized_matches.append(serialized_match)
+            
+        #returning matches
+        return serialized_matches
 
 
 async def main(): 
@@ -108,7 +110,7 @@ async def main():
     for tier in TIER: 
         for division in DIVISION: 
             player_list = fetch_summoner_name_by_division(division, tier, queue=QUEUE) 
-            
+            await asyncio.sleep(1)
             print(f"Received {len(player_list)} players \n")
             limit = asyncio.Semaphore(2)
             async with ClientSession() as session:
