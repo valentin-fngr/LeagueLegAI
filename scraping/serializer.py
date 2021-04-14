@@ -166,11 +166,13 @@ class MatchSerializer:
         # TO DO : format a MatchSerializer as an array 
         match_dict = self.to_dict()
         data_array = [v for k,v in match_dict.items() if k not in ["teamOne", "teamTwo"]]
+        print([item for item in match_dict.keys()])
         # unpack team's players 
         for team in [match_dict["teamOne"], match_dict["teamTwo"]]: 
             team_data = [] 
             # iterating over players
             for stat_attr in team: 
+                print(stat_attr)
                 if "player" in stat_attr:
                 # print(team[player])
                     team_data.extend(list(team[stat_attr].values()))
