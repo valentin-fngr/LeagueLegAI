@@ -3,12 +3,13 @@ import requests
 import json
 import datetime
 import pickle
-from utils import get_champion_name
+from utils import get_champion_name, get_final_role
 
 class PlayerSerializer:
 
     def __init__(self, *args, **kwargs): 
         self.participantId = str(kwargs.get("participantId", None))
+        self.role = str(kwargs.get("role", None))
         self.matchHistoryUri = str(kwargs.get("matchHistoryUri", None))
         self.championId = str(kwargs.get("championId", None))
         self.championName = kwargs.get("championName", None)
@@ -24,6 +25,8 @@ class PlayerSerializer:
 
     @classmethod 
     def from_ParticipantStatsDto(cls, ParticipantStatsDto, matchUri): 
+        # TO DO : 
+            # catch user role and lane to identify the most probable player's role
         data = {}
         attributes = list(cls().__dict__.keys())
         # we will handle championName after everything
@@ -35,6 +38,10 @@ class PlayerSerializer:
                 data[attr] = ParticipantStatsDto[attr]
             elif attr in ParticipantStatsDto["stats"]: 
                 data[attr] = ParticipantStatsDto["stats"][attr]
+            # catching the player role
+            elif attr in ParticipantStatsDto["timeline"]: 
+                role, lane = ParticipantStatsDto["timeline"]["role"], ParticipantStatsDto["timeline"]["lane"]
+                data[attr] = get_final_role(role, lane)
             else: 
                 # handle errors
                 print(f"Error : cannot retrieve attribute {attr} from the ParticipantStatsDto body.")
@@ -157,6 +164,13 @@ class MatchSerializer:
 
     def to_dict(self): 
         return self.__dict__
+    
+    def _sort_by_role(self): 
+        '''
+            sort the partipant with a top to bottom lane approach
+        '''
+        order = ["TOP", "JUNGLE", "MID", "SUPPORT", "ADC"]
+
 
     def as_row(self): 
         '''

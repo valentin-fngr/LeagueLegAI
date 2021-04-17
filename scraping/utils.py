@@ -7,18 +7,26 @@ import time
 import json
 import random
 
+LANE_ROLE = {
+    "MIDDLE" : ("MIDDLE", "SOLO"),
+    "TOP" : ("TOP", "SOLO"),
+    "JUNGLE" : ("JUNGLE", "NONE"),
+    "ADC" : ("BOTTOM", "DUO_CARRY"),
+    "SUPPORT" : ("BOTTOM", "DUO_SUPPORT")
+}
+
+
 """
     Utility functions to fetch informations from the riot API
 
 """
-
 with open("champion_list", "rb") as f: 
     CHAMPION_LIST = pickle.load(f)["champion_list"]
 API_KEY = os.environ.get("RIOT_KEY")
 USER_DETAIL_URL = "https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/"
 MATCH_BY_USER_URL = "https://euw1.api.riotgames.com/lol/match/v4/matchlists/by-account/"
 MATCH_DETAILS_URL = "https://euw1.api.riotgames.com/lol/match/v4/matches/"
-CHAMPIONS_URL = "http://ddragon.leagueoflegends.com/cdn/11.7.1/data/en_US/champion.json"
+CHAMPIONS_URL = "http://ddragon.leagueoflegends.com/cdn/11.8.1/data/en_US/champion.json"
 
 LEAGUE_URL = "https://euw1.api.riotgames.com/lol/league/v4/entries"
 headers = {
@@ -38,7 +46,7 @@ async def fetch_user_account_id(summoner_name, session):
     print("-"*20)
     print(r.headers.get("X-Method-Rate-Limit-Count"))
     print("-"*20)
-    await asyncio.sleep(1.4 + random.random())
+    await asyncio.sleep(1.6 + random.random())
     r.raise_for_status()
     content = await r.json()
     # get account id
@@ -46,9 +54,9 @@ async def fetch_user_account_id(summoner_name, session):
     print(f"Successfully retrieved account id : {accountId}")
     return accountId
 
-async def fetch_user_matches(account_id, session, endIndex=1): 
+async def fetch_user_matches(account_id, session, endIndex=20): 
     '''
-        fetch user's latest 30 matches
+        fetch user's latest 20 matches
         Argument: 
             account_id : encrypted account_id
             session : session, 
@@ -61,7 +69,7 @@ async def fetch_user_matches(account_id, session, endIndex=1):
     print("-"*50)
     print(r.headers.get("X-Method-Rate-Limit-Count"))
     print("-"*50)
-    await asyncio.sleep(1 + random.random())
+    await asyncio.sleep(1.4 + random.random())
     r.raise_for_status() # raise exception if status >= 400
     content = await r.json()
     matches = [match for match in content["matches"] if match is not None]
@@ -96,19 +104,17 @@ def fetch_summoner_name_by_division(division, tier, queue):
             
     '''
     players = set()
-    for i in range(10): # fetching up to 5 pages 
+    for i in range(5): # fetching up to 5 pages 
         page = i+1 
         url = LEAGUE_URL + f"/{queue}/{tier}/{division}?page={page}"
         
         r = requests.get(url, headers=headers)
         r.raise_for_status()
         body = r.json()
-        for player in body[:2]: # fetching first 2 players 
+        for player in body: # fetching first 2 players 
             summonerName = player["summonerName"]
             if summonerName not in players:  # avoiding potential duplciates
-                players.add(summonerName)
-                
-        break # break for fetching only one page
+                players.add(summonerName)   
     return players
 
 
@@ -118,3 +124,20 @@ def get_champion_name(champion_id):
         Argument : champion id
     '''
     return CHAMPION_LIST[champion_id]
+
+def get_final_role(role, lane): 
+    '''
+        returns the most suitable player's role 
+        Arguments: 
+            role : player role 
+            lane : player lane
+    '''
+    for k, v in LANE_ROLE.items(): 
+        if role in v and lane in v: 
+            return k 
+    
+    print("\n" * 3)
+    print(f"WE HAD : {role} and {lane} and we return NONE ! !!!! ")
+    print("\n" * 3)
+    # no role assigned
+    return None
