@@ -2,7 +2,7 @@ import pickle
 import requests 
 import os
 
-URL = "http://ddragon.leagueoflegends.com/cdn/11.7.1/data/en_US/champion.json"
+URL = "http://ddragon.leagueoflegends.com/cdn/11.8.1/data/en_US/champion.json"
 API_KEY = os.environ.get("RIOT_KEY")
 headers = {
     "X-Riot-Token": API_KEY
